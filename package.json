@@ -1,10 +1,16 @@
 {
   "name": "react",
+  "homepage": "https://NNiiece.github.io/CityOfTomorrow",
   "version": "0.0.0",
   "private": true,
   "dependencies": {
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "lucide-react": "^0.560.0",
     "react": "^18.1.0",
-    "react-dom": "^18.1.0"
+    "react-dom": "^18.1.0",
+    "recharts": "^3.5.1",
+    "typescript": "^5.9.3"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -14,5 +20,17 @@
   },
   "devDependencies": {
     "react-scripts": "latest"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }
