@@ -1,7 +1,5 @@
 # What is 'CityOfTomorrow'
 
-City of Tomorrow is The Unified AI Smart City Operating System
-
 ​The City of Tomorrow is a groundbreaking AI-powered Central City Command System designed to function as the comprehensive "Operating System" for Saudi Arabia’s next-generation smart cities. In an era where urban infrastructure faces increasingly sophisticated cyber-physical threats, this unified platform bridges the critical gap between digital security and physical safety, creating a resilient shield for the nation’s most vital assets.
 ​
 At its core, the system acts as a centralized brain that connects disparate government sectors—including the Ministry of Energy, the National Cybersecurity Authority (NCA), and the General Directorate of Public Security—into a single, synchronized network. It utilizes an advanced AI Monitoring & Response System that ingests massive streams of real-time data from millions of IoT sensors, surveillance cameras, and digital infrastructure logs. Instead of passive monitoring, the AI actively predicts anomalies, such as coordinated cyber-attacks on power grids or crowd density risks in high-traffic areas like the Two Holy Mosques.
