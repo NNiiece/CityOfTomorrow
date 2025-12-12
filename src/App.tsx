@@ -5,21 +5,23 @@ import {
   Wifi, 
   Zap, 
   Map, 
-  Cpu, 
-  AlertTriangle, 
-  Radio, 
-  Users, 
-  Lock, 
-  Eye, 
-  Server, 
-  Terminal, 
   Crosshair, 
   Globe,
   Moon,
   Droplet,
   CheckCircle,
   Wind,
-  Menu
+  Menu,
+  Lock, 
+  Eye, 
+  Server, 
+  Terminal, 
+  AlertTriangle,
+  MessageSquare, 
+  Send,          
+  X,             
+  Loader2,
+  Users // Added missing import
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -52,6 +54,11 @@ interface SectorStatus {
   energy: number;
 }
 
+interface ChatMessage {
+  role: 'ai' | 'user';
+  text: string;
+}
+
 // --- Mock Data Generators ---
 const generateData = (length: number) => {
   return Array.from({ length }, (_, i) => ({
@@ -76,8 +83,18 @@ export default function CityOSDashboard() {
   const [networkLoad, setNetworkLoad] = useState(generateData(20));
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [sectors, setSectors] = useState<SectorStatus[]>(SECTORS);
-  const [threatLevel, setThreatLevel] = useState<number>(0); // 0-100
+  const [threatLevel, setThreatLevel] = useState<number>(0); 
+  
+  // NEW STATE FEATURES
+  const [threatCount, setThreatCount] = useState(0); // For the red badge
+  const [isChatOpen, setIsChatOpen] = useState(false); // For Chatbot visibility
+  const [chatInput, setChatInput] = useState('');
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    { role: 'ai', text: 'CityOfTomorrow Neural Link Online. Systems Nominal. How can I assist you, Commander?' }
+  ]);
+
   const logEndRef = useRef<HTMLDivElement>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   // --- Effects ---
 
@@ -91,6 +108,11 @@ export default function CityOSDashboard() {
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [logs]);
+
+  // Auto-scroll Chat
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages, isChatOpen]);
 
   // Simulation Loop
   useEffect(() => {
@@ -162,8 +184,36 @@ export default function CityOSDashboard() {
 
   const triggerThreat = () => {
     setThreatLevel(100);
+    setThreatCount(prev => prev + 1); // Increment notification badge
     addLog("MANUAL OVERRIDE: SIMULATING MASSIVE CYBER-PHYSICAL ATTACK", "CRIT", "ADMIN");
     addLog("Initiating Lockdown Protocols...", "WARN", "AI_CORE");
+  };
+
+  const handleAutoResolve = () => {
+    setThreatLevel(0);
+    setThreatCount(0); // Reset badge
+    addLog("THREATS NEUTRALIZED. SYSTEMS STABILIZED.", "SUCCESS", "AI_CORE");
+  };
+
+  const handleChatSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+
+    // Add user message
+    const userMsg = chatInput;
+    setChatMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+    setChatInput('');
+
+    // Simulate AI Response
+    setTimeout(() => {
+        let aiResponse = "Processing request...";
+        if (userMsg.toLowerCase().includes('threat')) aiResponse = `Current Threat Level is ${threatLevel}%. All patrols are active.`;
+        else if (userMsg.toLowerCase().includes('status')) aiResponse = "All systems operational. Energy grid efficiency at 98%.";
+        else if (userMsg.toLowerCase().includes('hello')) aiResponse = "Greetings. I am the CityOfTomorrow Sentinel AI. How can I help?";
+        else aiResponse = `I have logged: "${userMsg}" to the central database.`;
+
+        setChatMessages(prev => [...prev, { role: 'ai', text: aiResponse }]);
+    }, 1000);
   };
 
   const getStatusColor = (status: string) => {
@@ -177,8 +227,16 @@ export default function CityOSDashboard() {
 
   // --- Components ---
 
+  const ResolveButton = () => (
+    <button 
+      onClick={handleAutoResolve}
+      className="ml-auto flex items-center gap-2 px-4 py-2 rounded font-bold text-xs uppercase tracking-wider transition-all bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/20 hover:text-cyan-300"
+    >
+       <Zap size={14} /> ⚡ Auto-Resolve Issues
+    </button>
+  );
+
   const StatCard = ({ title, value, subtext, icon: Icon, trend, variant = 'default' }: any) => {
-    // Custom styling based on variant if needed, mostly we use the global theme
     return (
       <div className={`p-4 rounded-lg border bg-slate-800/50 backdrop-blur-md transition-all hover:bg-slate-800/80 ${threatLevel > 80 ? 'border-red-500/50 animate-pulse' : 'border-slate-700'}`}>
         <div className="flex justify-between items-start mb-2">
@@ -194,13 +252,16 @@ export default function CityOSDashboard() {
     );
   };
 
-  const SectionHeader = ({ title, subtitle }: { title: string, subtitle: string }) => (
-    <div className="mb-6 flex items-center gap-4">
-       <div className="h-8 w-1 bg-cyan-500 rounded-full"></div>
-       <div>
-         <h2 className="text-xl font-bold text-white tracking-tight">{title}</h2>
-         <p className="text-xs text-slate-400 font-mono uppercase">{subtitle}</p>
+  const SectionHeader = ({ title, subtitle, showResolve }: { title: string, subtitle: string, showResolve?: boolean }) => (
+    <div className="mb-6 flex items-center justify-between">
+       <div className="flex items-center gap-4">
+          <div className="h-8 w-1 bg-cyan-500 rounded-full"></div>
+          <div>
+            <h2 className="text-xl font-bold text-white tracking-tight">{title}</h2>
+            <p className="text-xs text-slate-400 font-mono uppercase">{subtitle}</p>
+          </div>
        </div>
+       {showResolve && <ResolveButton />}
     </div>
   );
 
@@ -208,7 +269,7 @@ export default function CityOSDashboard() {
     <div className={`flex flex-col font-mono text-xs bg-black/60 border border-slate-700 rounded-lg overflow-hidden ${className}`}>
       <div className="bg-slate-900 p-2 border-b border-slate-700 flex justify-between items-center">
         <span className="text-slate-400 flex items-center gap-2">
-          <Terminal size={12} /> SYSTEM_LOGS :: /var/log/city_os
+          <Terminal size={12} /> SYSTEM_LOGS :: /var/log/city_of_tomorrow
         </span>
         <span className="flex gap-1">
           <div className="w-2 h-2 rounded-full bg-red-500"></div>
@@ -376,7 +437,7 @@ export default function CityOSDashboard() {
         return (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full animate-fadeIn">
              <div className="col-span-1 lg:col-span-2">
-                 <SectionHeader title="General Directorate of Public Security" subtitle="Patrol Management & Emergency Dispatch" />
+                 <SectionHeader title="General Directorate of Public Security" subtitle="Patrol Management & Emergency Dispatch" showResolve={true} />
              </div>
             <div className="flex flex-col gap-6">
               <div className="grid grid-cols-2 gap-4">
@@ -418,7 +479,7 @@ export default function CityOSDashboard() {
       case 'wc2034': // World Cup Module
         return (
           <div className="flex flex-col gap-6 h-full animate-fadeIn">
-            <SectionHeader title="World Cup 2034 Hosting Authority" subtitle="Stadium Logistics & VIP Security Protocols" />
+            <SectionHeader title="World Cup 2034 Hosting Authority" subtitle="Stadium Logistics & VIP Security Protocols" showResolve={true} />
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <StatCard title="Stadium Capacity" value="85%" subtext="King Salman Stadium" icon={Users} trend={12} />
@@ -453,7 +514,7 @@ export default function CityOSDashboard() {
       case 'haram': // Two Holy Mosques
         return (
           <div className="flex flex-col gap-6 h-full animate-fadeIn">
-            <SectionHeader title="Two Holy Mosques Presidency" subtitle="Pilgrim Crowd Management & Environmental Quality" />
+            <SectionHeader title="Two Holy Mosques Presidency" subtitle="Pilgrim Crowd Management & Environmental Quality" showResolve={true} />
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <StatCard title="Mataf Density" value="MODERATE" subtext="Flow: 40k/hr" icon={Users} />
@@ -472,7 +533,7 @@ export default function CityOSDashboard() {
                     </BarChart>
                   </ResponsiveContainer>
                </div>
-               
+              
                <div className="bg-slate-900 border border-slate-700 rounded-lg p-6">
                   <h3 className="text-sm font-bold text-slate-300 mb-4 flex items-center gap-2"><Droplet size={16} className="text-blue-500"/> Zamzam Water & Cooling</h3>
                   <div className="space-y-4">
@@ -525,7 +586,7 @@ export default function CityOSDashboard() {
       case 'energy':
         return (
           <div className="h-full flex flex-col gap-6 animate-fadeIn">
-             <SectionHeader title="Ministry of Energy & Water" subtitle="National Grid Stability & Desalination" />
+             <SectionHeader title="Ministry of Energy & Water" subtitle="National Grid Stability & Desalination" showResolve={true} />
              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <StatCard title="Grid Load" value="42 GW" subtext="Peak: 14:00" icon={Zap} />
                 <StatCard title="Water Reserves" value="98%" subtext="Strategic Storage" icon={Droplet} />
@@ -672,7 +733,7 @@ export default function CityOSDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-cyan-500/30 overflow-hidden flex flex-col">
+    <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-cyan-500/30 overflow-hidden flex flex-col relative">
       
       {/* --- HEADER --- */}
       <header className="h-16 border-b border-slate-800 bg-slate-900/80 backdrop-blur flex items-center justify-between px-6 z-10">
@@ -686,7 +747,7 @@ export default function CityOSDashboard() {
               City of Tomorrow <span className="text-cyan-400 text-sm font-mono align-top">OS v4.0</span>
             </h1>
             <div className="text-[10px] text-slate-400 tracking-[0.2em] uppercase">
-              Integrated AI Security & Operations
+               Integrated AI Security & Operations
             </div>
           </div>
         </div>
@@ -729,13 +790,13 @@ export default function CityOSDashboard() {
             { id: 'energy', icon: Zap, label: 'Energy & Water' },
             { id: 'nca', icon: Lock, label: 'NCA Cyber Defense' },
             { id: 'haram', icon: Moon, label: 'Two Holy Mosques' },
-            { id: 'security', icon: Shield, label: 'Public Security' },
+            { id: 'security', icon: Shield, label: 'Public Security' }, // Will add badge here
             { id: 'iot', icon: Wifi, label: 'IoT & Sensors' },
           ].map((item) => (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id as any)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-md text-sm transition-all text-left ${
+              className={`relative flex items-center gap-3 px-4 py-3 rounded-md text-sm transition-all text-left ${
                 activeTab === item.id 
                   ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' 
                   : 'text-slate-400 hover:bg-slate-800 hover:text-white'
@@ -743,6 +804,13 @@ export default function CityOSDashboard() {
             >
               <item.icon size={18} />
               {item.label}
+              
+              {/* NOTIFICATION BADGE: Only show on Security Tab if threats exist */}
+              {item.id === 'security' && threatCount > 0 && (
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]">
+                   {threatCount}
+                </div>
+              )}
             </button>
           ))}
 
@@ -756,7 +824,7 @@ export default function CityOSDashboard() {
                      <span className="text-blue-400">42%</span>
                    </div>
                    <div className="w-full bg-slate-800 rounded-full h-1">
-                     <div className="bg-blue-500 h-1 rounded-full" style={{width: '42%'}}></div>
+                      <div className="bg-blue-500 h-1 rounded-full" style={{width: '42%'}}></div>
                    </div>
                  </div>
                  <div>
@@ -765,7 +833,7 @@ export default function CityOSDashboard() {
                      <span className="text-emerald-400">89%</span>
                    </div>
                    <div className="w-full bg-slate-800 rounded-full h-1">
-                     <div className="bg-emerald-500 h-1 rounded-full" style={{width: '89%'}}></div>
+                      <div className="bg-emerald-500 h-1 rounded-full" style={{width: '89%'}}></div>
                    </div>
                  </div>
                </div>
@@ -794,6 +862,59 @@ export default function CityOSDashboard() {
           {renderContent()}
         </main>
       </div>
+
+      {/* --- AI CHATBOT OVERLAY --- */}
+      <div className={`fixed bottom-6 right-6 z-50 transition-all duration-300 ${isChatOpen ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0 pointer-events-none'}`}>
+          <div className="w-80 bg-slate-900/95 backdrop-blur-xl border border-slate-700 rounded-xl shadow-2xl overflow-hidden flex flex-col">
+              {/* Chat Header */}
+              <div className="bg-slate-800 p-3 flex justify-between items-center border-b border-slate-700">
+                  <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                      <span className="font-bold text-sm text-white">CityOfTomorrow Assistant</span>
+                  </div>
+                  <button onClick={() => setIsChatOpen(false)} className="text-slate-400 hover:text-white"><X size={16} /></button>
+              </div>
+
+              {/* Chat Messages */}
+              <div className="h-64 overflow-y-auto p-4 space-y-3 scrollbar-hide">
+                  {chatMessages.map((msg, idx) => (
+                      <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[85%] p-2 rounded-lg text-xs ${
+                              msg.role === 'user' 
+                              ? 'bg-cyan-600 text-white rounded-br-none' 
+                              : 'bg-slate-800 text-slate-200 border border-slate-700 rounded-bl-none'
+                          }`}>
+                              {msg.text}
+                          </div>
+                      </div>
+                  ))}
+                  <div ref={chatEndRef}></div>
+              </div>
+
+              {/* Chat Input */}
+              <form onSubmit={handleChatSubmit} className="p-3 bg-slate-800 border-t border-slate-700 flex gap-2">
+                  <input 
+                      type="text" 
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      placeholder="Enter command..."
+                      className="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                  />
+                  <button type="submit" className="bg-cyan-600 hover:bg-cyan-500 text-white p-1.5 rounded transition-colors">
+                      <Send size={14} />
+                  </button>
+              </form>
+          </div>
+      </div>
+
+      {/* Chat Toggle Button (Always Visible) */}
+      <button 
+          onClick={() => setIsChatOpen(prev => !prev)}
+          className={`fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white flex items-center justify-center shadow-lg transition-all duration-300 ${isChatOpen ? 'scale-0' : 'scale-100 hover:scale-110'}`}
+      >
+          <MessageSquare size={20} />
+      </button>
+
     </div>
   );
 }
